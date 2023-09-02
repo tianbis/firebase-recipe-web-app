@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+import firebase from './FirebaseConfig';
 import './App.css';
 
 function App() {
