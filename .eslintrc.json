@@ -1,6 +1,3 @@
 {
-  "extends": ["react-app","react-app/jest"],
-  "rules": {
-      "indent": ["error", 2]
-  }
+  "extends": ["react-app","react-app/jest"]
 }
