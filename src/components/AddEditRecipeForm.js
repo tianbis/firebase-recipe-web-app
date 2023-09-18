@@ -1,6 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const AddEditRecipeForm = ({ handleAddRecipe }) => {
+const AddEditRecipeForm = ({
+  existingRecipe,
+  handleAddRecipe,
+  handleUpdateRecipe,
+  handleEditRecipeCancel,
+  handleDeleteRecipe,
+}) => {
+  useEffect(() => {
+    if (existingRecipe) {
+      setName(existingRecipe.name);
+      setCategory(existingRecipe.category);
+      setDirections(existingRecipe.directions);
+      setPublishDate(existingRecipe.publishDate.toISOString().split('T')[0]);
+      setIngredients(existingRecipe.ingredients);
+    } else {
+      resetForm();
+    }
+  }, [existingRecipe]);
+
   const [name, setName] = useState('');
   const [category, setCategory] = useState();
   const [directions, setDirections] = useState('');
@@ -26,7 +44,13 @@ const AddEditRecipeForm = ({ handleAddRecipe }) => {
       ingredients,
     };
 
-    handleAddRecipe(newRecipe);
+    if (existingRecipe) {
+      handleUpdateRecipe(newRecipe, existingRecipe.id);
+    } else {
+      handleAddRecipe(newRecipe);
+    }
+
+    resetForm();
   }
 
   function handleAddIngredient(e) {
@@ -40,9 +64,17 @@ const AddEditRecipeForm = ({ handleAddRecipe }) => {
     setIngredients([...ingredients, ingredientName]);
     setIngredientName('');
   }
+
+  function resetForm() {
+    setName('');
+    setCategory('');
+    setDirections('');
+    setPublishDate('');
+    setIngredients([]);
+  }
   return (
     <form className="add-edit-recipe-form-container" onSubmit={handleRecipeFormSubmit}>
-      <h2>Add a New Recipe</h2>
+      {existingRecipe ? <h2>Update the recipe</h2> : <h2>Add a New Recipe</h2>}
       <div className="top-form-section">
         <div className="fields">
           <label className="recipe-label input-label">
@@ -144,8 +176,25 @@ const AddEditRecipeForm = ({ handleAddRecipe }) => {
       </div>
       <div className="action-buttons">
         <button type="submit" className="primary-button action-button">
-          Create Recipe
+          {existingRecipe ? 'Update Recipe' : 'Create Recipe'}
         </button>
+        {existingRecipe ? (
+          <>
+            {' '}
+            <button
+              type="button"
+              onClick={handleEditRecipeCancel}
+              className="primary-button action-button"
+            >
+              Cancel
+            </button>
+            <button
+              className="primary-button action-button"
+              type="button"
+              onClick={() => handleDeleteRecipe(existingRecipe.id)}
+            ></button>
+          </>
+        ) : null}
       </div>
     </form>
   );
