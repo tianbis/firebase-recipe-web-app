@@ -192,7 +192,9 @@ const AddEditRecipeForm = ({
               className="primary-button action-button"
               type="button"
               onClick={() => handleDeleteRecipe(existingRecipe.id)}
-            ></button>
+            >
+              Delete
+            </button>
           </>
         ) : null}
       </div>
