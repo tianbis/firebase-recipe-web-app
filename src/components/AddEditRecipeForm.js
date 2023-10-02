@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ImageUploadPreview from './ImageUploadPreview';
 
 const AddEditRecipeForm = ({
   existingRecipe,
@@ -14,6 +15,7 @@ const AddEditRecipeForm = ({
       setDirections(existingRecipe.directions);
       setPublishDate(existingRecipe.publishDate.toISOString().split('T')[0]);
       setIngredients(existingRecipe.ingredients);
+      setImageUrl(existingRecipe.imageUrl);
     } else {
       resetForm();
     }
@@ -24,12 +26,18 @@ const AddEditRecipeForm = ({
   const [directions, setDirections] = useState('');
   const [ingredients, setIngredients] = useState([]);
   const [ingredientName, setIngredientName] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [publishDate, setPublishDate] = useState(new Date().toISOString().split('T')[0]);
 
   function handleRecipeFormSubmit(e) {
     e.preventDefault();
     if (ingredients.length === 0) {
       alert('Ingredients cannot be empty, please add at least one');
+      return;
+    }
+
+    if (!imageUrl) {
+      alert('Missing recipe image. Please add a recipe image');
       return;
     }
 
@@ -42,6 +50,7 @@ const AddEditRecipeForm = ({
       publishDate: new Date(publishDate),
       isPublished,
       ingredients,
+      imageUrl,
     };
 
     if (existingRecipe) {
@@ -71,11 +80,21 @@ const AddEditRecipeForm = ({
     setDirections('');
     setPublishDate('');
     setIngredients([]);
+    setImageUrl('');
   }
   return (
     <form className="add-edit-recipe-form-container" onSubmit={handleRecipeFormSubmit}>
       {existingRecipe ? <h2>Update the recipe</h2> : <h2>Add a New Recipe</h2>}
       <div className="top-form-section">
+        <div className="image-input-box">
+          Recipe Image
+          <ImageUploadPreview
+            basePath="recipes"
+            existingImageUrl={imageUrl}
+            handleUploadFinished={(downloadUrl) => setImageUrl(downloadUrl)}
+            handleUploadCancel={() => setImageUrl('')}
+          />
+        </div>
         <div className="fields">
           <label className="recipe-label input-label">
             Recipe Name:
