@@ -5,6 +5,7 @@ import './App.css';
 import LoginForm from './components/LoginForm';
 import AddEditRecipeForm from './components/AddEditRecipeForm';
 import FirebaseFirestoreService from './FirebaseFirestoreService';
+// import FirebaseFirestoreRestService from './FirebaseFirestoreRestService';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -14,6 +15,9 @@ function App() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [orderBy, setOrderBy] = useState('publishDateDesc');
   const [recipesPerPage, setRecipesPerPage] = useState(3);
+  const [isLastPage, setIsLastPage] = useState(false);
+  const [totalNumberOfPages, setTotalNumberOfPages] = useState(0);
+  const [currentPageNumber, setCurrentPageNumber] = useState(1);
 
   useEffect(() => {
     setIsLoading(true);
@@ -29,7 +33,7 @@ function App() {
         setIsLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, categoryFilter, orderBy, recipesPerPage]);
+  }, [user, categoryFilter, orderBy, recipesPerPage, currentPageNumber]);
 
   FirebaseAuthService.subscribeToAuthChanges(setUser);
 
@@ -91,6 +95,51 @@ function App() {
       } else {
         fetchedRecipes = [...newRecipes];
       }
+      // const response = await FirebaseFirestoreRestService.readDocuments({
+      //   collection: 'recipes',
+      //   queries,
+      //   orderByField,
+      //   orderByDirection,
+      //   perPage: recipesPerPage,
+      //   pageNumber: currentPageNumber,
+      // });
+
+      if (response && response.documents) {
+        const totalNumberOfPages = Math.ceil(response.recipeCount / recipesPerPage);
+        setTotalNumberOfPages(totalNumberOfPages);
+
+        const nextPageQuery = {
+          collection: 'recipes',
+          queries,
+          orderByField,
+          orderByDirection,
+          perPage: recipesPerPage,
+          pageNumber: currentPageNumber + 1,
+        };
+
+        const nextPageResponse = await FirebaseFirestoreService.readDocuments(nextPageQuery);
+
+        if (
+          nextPageResponse &&
+          nextPageResponse.documents &&
+          nextPageResponse.documents.length === 0
+        ) {
+          setIsLastPage(true);
+        } else {
+          setIsLastPage(false);
+        }
+
+        if (response.documents.length === 0 && currentPageNumber !== 1) {
+          startTransition(() => setCurrentPageNumber(currentPageNumber - 1));
+        }
+
+        fetchedRecipes = response.documents;
+
+        fetchedRecipes.forEach((recipe) => {
+          const unixPublishDateTime = recipe.publishDate;
+          recipe.publishDate = new Date(unixPublishDateTime * 1000);
+        });
+      }
     } catch (error) {
       console.log(error.message);
       // throw error;
@@ -127,6 +176,7 @@ function App() {
   async function handleAddRecipe(newRecipe) {
     try {
       const response = await FirebaseFirestoreService.createDocument('recipes', newRecipe);
+      // const response = await FirebaseFirestoreRestService.createDocument('recipes', newRecipe);
       handleFetchRecipes();
       alert(`successfully created a recipe with an ID = ${response.id}`);
     } catch (error) {
@@ -137,7 +187,7 @@ function App() {
   async function handleUpdateRecipe(newRecipe, recipeId) {
     try {
       await FirebaseFirestoreService.updateDocument('recipes', recipeId, newRecipe);
-
+      // await FirebaseFirestoreRestService.updateDocument('recipes', recipeId, newRecipe);
       handleFetchRecipes();
 
       alert(`Successfully updated a recipe with ID = ${recipeId}`);
@@ -153,6 +203,7 @@ function App() {
     if (deleteConfirmation) {
       try {
         await FirebaseFirestoreService.deleteDocument('recipes', recipeId);
+        // await FirebaseFirestoreRestService.deleteDocument('recipes', recipeId);
 
         handleFetchRecipes();
         startTransition(() => {
@@ -305,6 +356,49 @@ function App() {
               <button type="button" onClick={handleLoadMoreRecipesClick} className="primary-button">
                 Load More Recipes
               </button>
+              <div className="row">
+                <button
+                  className={currentPageNumber === 1 ? 'primary-button hidden' : 'primary-button'}
+                  type="button"
+                  onClick={() => {
+                    startTransition(() => setCurrentPageNumber(currentPageNumber - 1));
+                  }}
+                >
+                  Previous
+                </button>
+                <div>Page {currentPageNumber}</div>
+                <button
+                  className={isLastPage ? 'primary-button hidden' : 'primary-button'}
+                  type="button"
+                  onClick={() => {
+                    startTransition(() => setCurrentPageNumber(currentPageNumber + 1));
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+              {/* <div className="row">
+                {!categoryFilter
+                  ? new Array(totalNumberOfPages).fill(0).map((value, idx) => {
+                      return (
+                        <button
+                          key={idx + 1}
+                          type="button"
+                          className={
+                            currentPageNumber === idx + 1
+                              ? 'selected-page primary-button page-button'
+                              : 'primary-button page-button'
+                          }
+                          onClick={() => {
+                            startTransition(() => setCurrentPageNumber(idx + 1));
+                          }}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })
+                  : null}
+              </div> */}
             </div>
           </>
         ) : null}
