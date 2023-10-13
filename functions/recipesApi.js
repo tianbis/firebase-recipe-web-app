@@ -155,7 +155,7 @@ app.put('/recipes/:id', async (req, res) => {
   }
 });
 
-app.delete('recipes/:id', async (req, res) => {
+app.delete('/recipes/:id', async (req, res) => {
   const authorizationHeader = req.headers['authorization'];
 
   if (!authorizationHeader) {
@@ -163,13 +163,18 @@ app.delete('recipes/:id', async (req, res) => {
     return;
   }
 
+  console.log('______authorizationHeader______', authorizationHeader);
+
   try {
     await Utilities.authorizeUser(authorizationHeader, auth);
   } catch (error) {
+    console.log('______error______', error);
     res.status(401).send(error.message);
   }
 
   const id = req.params.id;
+
+  console.log('______id______', id);
 
   try {
     await firestore.collection('recipes').doc(id).delete();
